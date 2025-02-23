@@ -15,23 +15,7 @@ func captureVoIPAudio(done chan bool) {
 	portaudio.Initialize()
 	defer portaudio.Terminate()
 
-	devices, err := portaudio.Devices()
-	if err != nil {
-		fmt.Println("Error listing devices:", err)
-		return
-	}
-	var airpods *portaudio.DeviceInfo
-	for _, dev := range devices {
-		if dev.Name == "Hasan's Airpods" && dev.MaxInputChannels > 0 {
-			airpods = dev
-			break
-		}
-	}
-	if airpods == nil {
-		fmt.Println("Hasan's Airpods not found or unavailable")
-		return
-	}
-
+	// Create file for raw audio
 	file, err := os.Create("test/audio.raw")
 	if err != nil {
 		fmt.Println("Error creating test/audio.raw:", err)
@@ -39,15 +23,11 @@ func captureVoIPAudio(done chan bool) {
 	}
 	defer file.Close()
 
+	// Open default stream
 	buffer := make([]int16, 512)
-	params := portaudio.HighLatencyParameters(airpods, nil)
-	params.Input.Channels = 1
-	params.SampleRate = 16000
-	params.FramesPerBuffer = len(buffer)
-
-	stream, err := portaudio.OpenStream(params, buffer)
+	stream, err := portaudio.OpenDefaultStream(1, 0, 16000, len(buffer), buffer)
 	if err != nil {
-		fmt.Println("Error opening stream:", err)
+		fmt.Println("Error opening default stream:", err)
 		return
 	}
 	defer stream.Close()
@@ -58,7 +38,7 @@ func captureVoIPAudio(done chan bool) {
 	}
 	defer stream.Stop()
 
-	fmt.Println("Capturing VoIP audio from Hasan's Airpods and saving to test/audio.raw...")
+	fmt.Println("Capturing VoIP audio from default device and saving to test/audio.raw...")
 	for {
 		select {
 		case <-done:
@@ -68,7 +48,7 @@ func captureVoIPAudio(done chan bool) {
 				fmt.Println("Error reading audio:", err)
 				return
 			}
-			fmt.Printf("VoIP: %d samples from AirPods\n", len(buffer))
+			fmt.Printf("VoIP: %d samples from default device\n", len(buffer))
 			for _, sample := range buffer {
 				if _, err := file.Write([]byte{byte(sample & 0xff), byte(sample >> 8)}); err != nil {
 					fmt.Println("Error writing to test/audio.raw:", err)
@@ -84,7 +64,7 @@ func recordAV(done chan bool) {
 		"-f", "avfoundation",
 		"-framerate", "30",
 		"-video_size", "1280x720",
-		"-i", "0:0",
+		"-i", "0:0", // Default video and audio devices
 		"-c:v", "libx264",
 		"-c:a", "aac",
 		"-ar", "16000",
@@ -106,7 +86,7 @@ func recordAV(done chan bool) {
 		return
 	}
 
-	fmt.Println("Recording video + audio to test/recording.mp4...")
+	fmt.Println("Recording video + audio to test/recording.mp4 using default devices...")
 	<-done
 	fmt.Println("Stopping FFmpeg...")
 	stdin.Write([]byte("q"))

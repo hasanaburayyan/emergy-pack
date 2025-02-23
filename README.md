@@ -2,8 +2,9 @@
 
 ## Dev Setup
 1. `brew install portaudio`
-2. `go get -u github.com/gordonklaus/portaudio` 
-3. `go get -u github.com/go-audio/wav`
+2. `brew install ffmpeg`
+3. `go get -u github.com/gordonklaus/portaudio` 
+4. `go get -u github.com/go-audio/wav`
 
 
 ## Run
